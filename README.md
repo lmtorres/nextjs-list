@@ -9,7 +9,7 @@ npm install
 Create and seed the database:
 
 ```
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 Start the app:
