@@ -2,10 +2,13 @@ import React, {useState} from "react";
 import Table, {SelectColumnFilter} from "../components/Table";
 import Router, {useRouter} from "next/router";
 import CreatableSelect from 'react-select/creatable';
-import { ActionMeta, OnChangeValue } from 'react-select';
+/*import { ActionMeta, OnChangeValue } from 'react-select';*/
 import { TrashIcon, PencilAltIcon } from '@heroicons/react/solid';
+import {useSession, signIn, signOut} from 'next-auth/react';
 
 const Home = props => {
+  const {data: session} = useSession();
+
   const setDefaultTeams = () => {
     return props.teams.map(t => ({
       "value" : t.id,
@@ -18,7 +21,7 @@ const Home = props => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [team, setTeam] = useState({});
+  const [team, setTeam] = useState('');
   const [teams, setTeams] = useState(setDefaultTeams());
   const [playerId, setPlayerId] = useState('');
   const [editMode, setEditMode] = useState(false);
@@ -61,7 +64,9 @@ const Home = props => {
               <button onClick={() => {
                 setPlayerId(row.original.id)
                 setShowConfirmDialog(true)
-              }}><TrashIcon className="h-5 w-5 text-red-500" aria-hidden="true" /></button>
+              }}>
+                <TrashIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+              </button>
             </div>
           )
         }
@@ -70,9 +75,10 @@ const Home = props => {
     []
   );
 
+  // populate data for table
   const data = React.useMemo(() => props.players, []);
 
-
+  // check if team already exists
   const filterTeams = (inputValue) => {
     return teams.filter((i) =>
       i.label.toLowerCase().includes(inputValue.toLowerCase())
@@ -88,6 +94,7 @@ const Home = props => {
     await Router.push('/')
   }
 
+  // method called when a player is created or updated
   const submitData = async e => {
     e.preventDefault()
     try {
@@ -114,6 +121,7 @@ const Home = props => {
     }
   }
 
+  // clear form values
   const clearForm = e => {
     e.preventDefault()
     setEditMode(false)
@@ -122,6 +130,7 @@ const Home = props => {
     setTeam('')
   }
 
+  // delete the player
   const destroy = async (id) => {
     await fetch(`/api/players/${id}`, {
       method: 'DELETE',
@@ -146,11 +155,17 @@ const Home = props => {
             </svg>
           </span>
         </div>
-        ) : null}
+      ) : null}
       <div className="min-h-screen bg-gray-100 text-gray-900">
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-          <div className="">
+          <div className="flex justify-between">
             <h1 className="text-xl font-semibold">MLB Players</h1>
+            {session ? (
+              <div>
+                Signed in as {session.user.email} <br />
+                <button className="float-right text-cyan-700 hover:text-cyan-900" onClick={() => signOut()}>Sign out</button>
+              </div>
+            ) : null}
           </div>
           <div className="mt-4 float-right">
             <button
@@ -166,129 +181,183 @@ const Home = props => {
           </div>
         </main>
       </div>
-      {showModal ? (
-        <>
-          <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
-          >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none w-96">
-                <form
-                  onSubmit={submitData}>
+      {showModal ?
+        session || !editMode ? (
+          <>
+            <div className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
+              <div className="relative w-auto my-6 mx-auto max-w-3xl">
+                <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none w-96">
+                  <form
+                    onSubmit={submitData}>
+                    <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t">
+                      <h3 className="text-3xl font-semibold">
+                        {editMode ? 'Edit' : 'Add'} Player
+                      </h3>
+                      <button
+                        className="background-transparent p-1 ml-auto border-0 text-black opacity-50 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
+                        onClick={(event) => {
+                          clearForm(event)
+                          setShowModal(false)
+                        }}
+                      >
+                      <span className="text-black opacity-50 h-6 w-6 text-2xl block outline-none focus:outline-none">
+                        ×
+                      </span>
+                      </button>
+                    </div>
+                    <div className="relative p-6 flex-auto">
+                      <input
+                        autoFocus
+                        onChange={e => setName(e.target.value)}
+                        placeholder="Name"
+                        type="text"
+                        value={name}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      />
+                      <input
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder="Description"
+                        type="text"
+                        value={description}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      />
+                      <CreatableSelect
+                        options={teams}
+                        isClearable={true}
+                        placeholder="Start typing a team name..."
+                        onChange={handleChangeTeam}
+                        loadOptions={filterTeams}
+                        defaultValue={team}
+                        classNamePrefix="select2-selection"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      />
+                    </div>
+                    <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
+                      <button
+                        className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                        type="button"
+                        onClick={(event) => {
+                          clearForm(event)
+                          setShowModal(false)
+                        }}
+                      >
+                        Close
+                      </button>
+                      <button
+                        disabled={!description || !name || !team}
+                        className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                        type="submit"
+                      >
+                        {editMode ? 'Update' : 'Create'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="opacity-25 fixed inset-0 z-40 bg-black" />
+          </>
+        ) : (
+          <SignInMessage
+            clearForm={clearForm}
+            onClose={() => {setShowModal(false)}}
+          />
+        ) : null}
+
+      {showConfirmDialog ?
+        session ? (
+          <>
+            <div
+              className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
+            >
+              <div className="relative w-auto my-6 mx-auto max-w-3xl">
+                <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none w-96">
                   <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t">
                     <h3 className="text-3xl font-semibold">
-                      {editMode ? 'Edit' : 'Add'} Player
+                      Are you sure?
                     </h3>
                     <button
-                      className="background-transparent p-1 ml-auto border-0 text-black opacity-50 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
-                      onClick={(event) => {
-                        clearForm(event)
-                        setShowModal(false)
-                      }}
+                      className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
+                      onClick={() => setShowConfirmDialog(false)}
                     >
-                      <span className="text-black opacity-50 h-6 w-6 text-2xl block outline-none focus:outline-none">
+                      <span className="bg-transparent text-black opacity-5 h-6 w-6 text-2xl block outline-none focus:outline-none">
                         ×
                       </span>
                     </button>
                   </div>
                   <div className="relative p-6 flex-auto">
-                    <input
-                      autoFocus
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Name"
-                      type="text"
-                      value={name}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                    <input
-                      onChange={e => setDescription(e.target.value)}
-                      placeholder="Description"
-                      type="text"
-                      value={description}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
-                    <CreatableSelect
-                      options={teams}
-                      isClearable={true}
-                      placeholder="Start typing a team name..."
-                      onChange={handleChangeTeam}
-                      loadOptions={filterTeams}
-                      defaultValue={team}
-                      classNamePrefix="select2-selection"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    />
+                    This action cannot be undone.
                   </div>
                   <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
                     <button
                       className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                       type="button"
-                      onClick={(event) => {
-                        clearForm(event)
-                        setShowModal(false)
-                      }}
+                      onClick={() => setShowConfirmDialog(false)}
                     >
                       Close
                     </button>
                     <button
-                      disabled={!description || !name || !team}
                       className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                      type="submit"
+                      onClick={() => destroy(playerId)}
                     >
-                      {editMode ? 'Update' : 'Create'}
+                      Confirm
                     </button>
                   </div>
-                </form>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black" />
-        </>
-      ) : null}
+            <div className="opacity-25 fixed inset-0 z-40 bg-black" />
+          </>
+        ) : (
+          <SignInMessage
+            clearForm={clearForm}
+            onClose={() => {setShowConfirmDialog(false)}}
+          />
+        ) : null}
+    </>
+  )
+}
 
-      {showConfirmDialog ? (
-        <>
-          <div
-            className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none"
-          >
-            <div className="relative w-auto my-6 mx-auto max-w-3xl">
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none w-96">
-                <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t">
-                  <h3 className="text-3xl font-semibold">
-                    Are you sure?
-                  </h3>
-                  <button
-                    className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
-                    onClick={() => setShowConfirmDialog(false)}
-                  >
-                    <span className="bg-transparent text-black opacity-5 h-6 w-6 text-2xl block outline-none focus:outline-none">
-                      ×
-                    </span>
-                  </button>
-                </div>
-                <div className="relative p-6 flex-auto">
-                  This action cannot be undone.
-                </div>
-                <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
-                  <button
-                    className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                    type="button"
-                    onClick={() => setShowConfirmDialog(false)}
-                  >
-                    Close
-                  </button>
-                  <button
-                    className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
-                    onClick={() => destroy(playerId)}
-                  >
-                    Confirm
-                  </button>
-                </div>
-              </div>
+const SignInMessage = props => {
+  return (
+    <>
+      <div className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
+        <div className="relative w-auto my-6 mx-auto max-w-3xl">
+          <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none w-96">
+            <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t">
+              <h3 className="text-3xl font-semibold">
+                You must be signed in
+              </h3>
+              <button
+                className="background-transparent p-1 ml-auto border-0 text-black opacity-50 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
+                onClick={(event) => {
+                  props.clearForm(event)
+                  props.onClose()
+                }}
+              >
+                <span className="text-black opacity-50 h-6 w-6 text-2xl block outline-none focus:outline-none">
+                  ×
+                </span>
+              </button>
+            </div>
+            <div className="p-6 flex justify-center">
+              <button className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" onClick={() => signIn()}>Please Sign in</button>
+            </div>
+            <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
+              <button
+                className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                type="button"
+                onClick={(event) => {
+                  props.clearForm(event)
+                  props.onClose()
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
-          <div className="opacity-25 fixed inset-0 z-40 bg-black" />
-        </>
-      ) : null}
+        </div>
+      </div>
     </>
   )
 }

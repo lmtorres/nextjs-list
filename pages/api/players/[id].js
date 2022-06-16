@@ -1,17 +1,26 @@
 import prisma from '../../../lib/prisma'
+import { getSession } from "next-auth/react"
 
 export default async function handle(req, res) {
-  const playerId = req.query.id
+  const session = await getSession({ req })
+  if (session) {
+    const playerId = req.query.id
 
-  if (req.method === 'PUT') {
-    handlePUT(req, res)
-  } else if (req.method === 'DELETE') {
-    handleDELETE(playerId, res)
+    if (req.method === 'PUT') {
+      handlePUT(req, res)
+    } else if (req.method === 'DELETE') {
+      handleDELETE(playerId, res)
+    } else {
+      throw new Error(
+        `The HTTP ${req.method} method is not supported at this route.`
+      )
+    }
   } else {
     throw new Error(
-      `The HTTP ${req.method} method is not supported at this route.`
+      `User is not authenticated.`
     )
   }
+
 }
 
 // PUT /api/player/:id

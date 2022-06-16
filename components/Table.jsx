@@ -150,23 +150,23 @@ const Table = ({ columns, data }) => {
                   {...getTableBodyProps()}
                   className="bg-white divide-y divide-gray-200"
                 >
-                {page.map((row, i) => {
-                  prepareRow(row)
-                  return (
-                    <tr {...row.getRowProps()}>
-                      {row.cells.map(cell => {
-                        return (
-                          <td
-                            {...cell.getCellProps()}
-                            className="px-6 py-4 whitespace-nowrap"
-                          >
-                            {cell.render('Cell')}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  )
-                })}
+                  {page.map((row, i) => {
+                    prepareRow(row)
+                    return (
+                      <tr {...row.getRowProps()}>
+                        {row.cells.map(cell => {
+                          return (
+                            <td
+                              {...cell.getCellProps()}
+                              className="px-6 py-4 whitespace-nowrap"
+                            >
+                              {cell.render('Cell')}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
