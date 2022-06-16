@@ -19,14 +19,12 @@ async function handlePUT(req, res) {
   const playerId = req.query.id
   const { name, description, team } = req.body
   try {
-    //upsert the team information first
-    const upsertedTeam = await prisma.team.upsert({
+    // find or create the team information first
+    const updatedTeam = await prisma.team.upsert({
       where: {
         name: team.label
       },
-      update: {
-        name: team.label
-      },
+      update: {},
       create: {
         name: team.label
       }
@@ -37,7 +35,7 @@ async function handlePUT(req, res) {
       data: {
         name: name,
         description: description,
-        teamId: upsertedTeam.id
+        teamId: updatedTeam.id
       }
     })
     res.json(player)
