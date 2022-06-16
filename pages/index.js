@@ -259,7 +259,6 @@ const Home = props => {
           </>
         ) : (
           <SignInMessage
-            clearForm={clearForm}
             onClose={() => {setShowModal(false)}}
           />
         ) : null}
@@ -310,7 +309,6 @@ const Home = props => {
           </>
         ) : (
           <SignInMessage
-            clearForm={clearForm}
             onClose={() => {setShowConfirmDialog(false)}}
           />
         ) : null}
@@ -330,8 +328,7 @@ const SignInMessage = props => {
               </h3>
               <button
                 className="background-transparent p-1 ml-auto border-0 text-black opacity-50 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
-                onClick={(event) => {
-                  props.clearForm(event)
+                onClick={() => {
                   props.onClose()
                 }}
               >
@@ -347,8 +344,7 @@ const SignInMessage = props => {
               <button
                 className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                 type="button"
-                onClick={(event) => {
-                  props.clearForm(event)
+                onClick={() => {
                   props.onClose()
                 }}
               >
