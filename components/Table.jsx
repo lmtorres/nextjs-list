@@ -3,11 +3,10 @@ import React from "react";
 import { useTable, useGlobalFilter, useAsyncDebounce, useFilters, useSortBy, usePagination } from "react-table";
 import { ChevronDoubleLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDoubleRightIcon } from '@heroicons/react/solid';
 import { Button, PageButton } from './shared/Button';
+import { SortIcon, SortUpIcon, SortDownIcon } from'./shared/Icons';
 
 // Column filter dropdown
-export function SelectColumnFilter({
-                                     column: { filterValue, setFilter, preFilteredRows, id, render },
-                                   }) {
+export function SelectColumnFilter({column: { filterValue, setFilter, preFilteredRows, id, render }}) {
   // Calculate the options for filtering
   // using the preFilteredRows
   const options = React.useMemo(() => {
@@ -122,21 +121,26 @@ const Table = ({ columns, data }) => {
                 {headerGroups.map(headerGroup => (
                   <tr {...headerGroup.getHeaderGroupProps()}>
                     {headerGroup.headers.map(column => (
-                      // Add the sorting props to control sorting.
+                      // Add the sorting props
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        className="group px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider last:justify-center last:flex"
                         {...column.getHeaderProps(column.getSortByToggleProps())}
                       >
-                        {column.render('Header')}
-                        {/* Add a sort direction indicator */}
-                        <span>
-                            {column.isSorted
-                              ? column.isSortedDesc
-                                ? ' ▼'
-                                : ' ▲'
-                              : ''}
-                          </span>
+                        <div className="flex">
+                          {column.render('Header')}
+                          {/* Sort icons */}
+                          <span>
+                          {column.canSort ?
+                            column.isSorted
+                            ? column.isSortedDesc
+                              ? <SortDownIcon className="w-4 h-4 text-gray-400" />
+                              : <SortUpIcon className="w-4 h-4 text-gray-400" />
+                            : (
+                              <SortIcon className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100" />
+                            ) : null}
+                        </span>
+                        </div>
                       </th>
                     ))}
                   </tr>
@@ -232,11 +236,6 @@ const Table = ({ columns, data }) => {
           </div>
         </div>
       </div>
-      {/*<div>
-        <pre>
-          <code>{JSON.stringify(state, null, 2)}</code>
-        </pre>
-      </div>*/}
     </>
   );
 }
